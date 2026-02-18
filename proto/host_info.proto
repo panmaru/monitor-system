@@ -1,0 +1,7 @@
+syntax = "proto3";
+package monitor;
+
+message HostInfo {
+	string hostname = 1;
+	string ipAddress = 2;
+}

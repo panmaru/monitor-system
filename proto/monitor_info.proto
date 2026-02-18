@@ -1,0 +1,9 @@
+syntax = "proto3";
+package monitor;
+
+import "host_info.proto";
+
+message MonitorInfo {
+	HostInfo hostInfo = 1;
+}
+

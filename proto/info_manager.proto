@@ -1,0 +1,9 @@
+syntax = "proto3";
+package monitor;
+
+import "google/protobuf/empty.proto";
+import "monitor_info.proto";
+
+service InfoManager {
+	rpc ReportMonitorInfo (MonitorInfo) returns (google.protobuf.Empty) {}
+}
