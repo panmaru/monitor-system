@@ -1,30 +1,30 @@
 
-#include "rpc/monitor_pusher.h"
+#include "rpc/monitor_info_reporter.h"
 #include "utils/display_monitor_info.h"
-#include "utils/info.h"
+#include "utils/worker_log.h"
 
 namespace monitor {
 
-MonitorPusher::MonitorPusher(const WorkerConfig &config)
+MonitorInfoReporter::MonitorInfoReporter(const WorkerConfig &config)
     : m_config(config), m_running(false) {
     std::shared_ptr<grpc::Channel> channel = grpc::CreateChannel(
         config.managerAddress, grpc::InsecureChannelCredentials());
-    m_stub = monitor::InfoManager::NewStub(channel);
+    m_stub = monitor::MonitorInfoService::NewStub(channel);
 }
 
-MonitorPusher::~MonitorPusher() { stop(); }
+MonitorInfoReporter::~MonitorInfoReporter() { stop(); }
 
-void MonitorPusher::start() {
+void MonitorInfoReporter::start() {
     if (m_running)
         return;
 
     m_running = true;
-    m_thread = std::thread(&MonitorPusher::pushLoop, this);
-    info("Monitor pusher started, pushing to {} every {} seconds",
-         m_config.managerAddress, m_config.intervalSeconds);
+    m_thread = std::thread(&MonitorInfoReporter::reportLoop, this);
+    workerLog("Monitor pusher started, pushing to {} every {} seconds",
+              m_config.managerAddress, m_config.intervalSeconds);
 }
 
-void MonitorPusher::stop() {
+void MonitorInfoReporter::stop() {
     if (!m_running)
         return;
 
@@ -34,9 +34,9 @@ void MonitorPusher::stop() {
         m_thread.join();
 }
 
-void MonitorPusher::pushLoop() {
+void MonitorInfoReporter::reportLoop() {
     while (m_running) {
-        info("Pushing worker info to manager...");
+        workerLog("Pushing worker info to manager...");
         push();
 
         std::unique_lock<std::mutex> lock(m_mutex);
@@ -45,7 +45,7 @@ void MonitorPusher::pushLoop() {
     }
 }
 
-void MonitorPusher::push() {
+void MonitorInfoReporter::push() {
     monitor::MonitorInfo monitorInfo = m_infoCollector.collectInfo();
     displayMonitorInfo(monitorInfo);
 
@@ -55,9 +55,10 @@ void MonitorPusher::push() {
         m_stub->ReportMonitorInfo(&context, monitorInfo, &response);
 
     if (status.ok()) {
-        info("Pushed monitor data to {} successfully", m_config.managerAddress);
+        workerLog("Pushed monitor data to {} successfully",
+                  m_config.managerAddress);
     } else {
-        info("Push failed: {}", status.error_message());
+        workerLog("Push failed: {}", status.error_message());
     }
 }
 

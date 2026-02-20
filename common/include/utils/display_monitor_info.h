@@ -8,6 +8,7 @@ namespace monitor {
 
 void displayMonitorInfo(const MonitorInfo &monitorInfo);
 
+void displayCollectTime(const google::protobuf::Timestamp &timestamp);
 void displayHostInfo(const HostInfo &hostInfo);
 
 } // namespace monitor

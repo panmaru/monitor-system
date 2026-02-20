@@ -1,6 +1,6 @@
 #pragma once
-#ifndef MINITOR_COLLECTOR_INTERFACE_H
-#define MINITOR_COLLECTOR_INTERFACE_H
+#ifndef MONITOR_COLLECTOR_INTERFACE_H
+#define MONITOR_COLLECTOR_INTERFACE_H
 
 #include "monitor_info.pb.h"
 

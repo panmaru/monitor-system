@@ -54,9 +54,10 @@ inline std::mutex &getInfoMutex() {
 }
 
 template <typename... Args>
-void info(std::format_string<Args...> fmt, Args &&...args) {
+void log(std::string_view tag, std::format_string<Args...> fmt,
+         Args &&...args) {
     std::lock_guard<std::mutex> lock(getInfoMutex());
-    std::print("{}[worker]{} ", ansi::green, ansi::reset);
+    std::print("{}[{}]{} ", ansi::green, tag, ansi::reset);
     std::println(fmt, std::forward<Args>(args)...);
 }
 

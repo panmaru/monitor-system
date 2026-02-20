@@ -1,90 +1,42 @@
-#include <csignal>
-#include <poll.h>
-#include <unistd.h>
-
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <absl/flags/usage.h>
 
-#include "rpc/monitor_pusher.h"
-#include "utils/info.h"
+#include "rpc/monitor_info_reporter.h"
+#include "utils/signal_handler.h"
 #include "utils/worker_config.h"
+#include "utils/worker_log.h"
 
 ABSL_FLAG(std::string, manager_address, "localhost:50051",
           "The address of the manager server");
 ABSL_FLAG(int, interval_seconds, 10,
           "The interval in seconds for pushing monitor data");
 
-int *getSignalPipe() {
-    static int signalPipe[2];
-    return signalPipe;
-}
-
 monitor::WorkerConfig parseCommandLine(int argc, char *argv[]);
-void setupSignalHandler();
-void waitForShutdownSignal();
-void cleanUp();
 
 int main(int argc, char *argv[]) {
     monitor::WorkerConfig config = parseCommandLine(argc, argv);
 
-    monitor::info("Starting monitor worker...");
-    monitor::MonitorPusher pusher(config);
-    pusher.start();
+    monitor::workerLog("Starting monitor worker...");
+    monitor::MonitorInfoReporter reporter(config);
+    reporter.start();
 
-    monitor::info("Press Ctrl+C to stop");
+    monitor::workerLog("Press Ctrl+C to stop");
+    monitor::SignalHandler &signalHandler =
+        monitor::SignalHandler::getInstance();
+    signalHandler.waitForShutdownSignal();
 
-    setupSignalHandler();
-    waitForShutdownSignal();
-
-    monitor::info("Stopping monitor worker gracefully ...");
-    pusher.stop();
-    cleanUp();
-}
-
-void handleSignal(int signal) {
-    if (signal == SIGINT || signal == SIGTERM) {
-        char msg = 'x';
-        int *signalPipe = getSignalPipe();
-        write(signalPipe[1], &msg, 1);
-    }
-}
-
-void setupSignalHandler() {
-    int *signalPipe = getSignalPipe();
-    pipe(signalPipe);
-
-    struct sigaction sa{};
-    sa.sa_handler = handleSignal;
-    sigemptyset(&sa.sa_mask);
-    sigaddset(&sa.sa_mask, SIGINT);
-    sigaddset(&sa.sa_mask, SIGTERM);
-    sa.sa_flags = 0;
-    sigaction(SIGINT, &sa, nullptr);
-    sigaction(SIGTERM, &sa, nullptr);
-}
-
-void waitForShutdownSignal() {
-    int *signalPipe = getSignalPipe();
-
-    pollfd pfd[1];
-    pfd[0].fd = signalPipe[0];
-    pfd[0].events = POLLIN;
-    while (true) {
-        int ret = poll(pfd, 1, -1);
-        if (ret > 0 && pfd[0].revents & POLLIN) {
-            char msg;
-            read(signalPipe[0], &msg, 1);
-            break;
-        }
-    }
+    monitor::workerLog("Stopping monitor worker gracefully...");
+    // reporter will stop automatically,
+    // no need to call reporter.stop() manually
 }
 
 monitor::WorkerConfig parseCommandLine(int argc, char *argv[]) {
     std::string usageMessage =
-        std::format("Worker node for monitoring system.\nUsage: {}"
-                    " [--manager_address=<manager_address>]"
-                    " [--interval_seconds=<interval_seconds>]",
+        std::format("Worker node for monitoring system.\n"
+                    "Usage: {}"
+                    " [--manager_address=<address>]"
+                    " [--interval_seconds=<seconds>]",
                     argv[0]);
     absl::SetProgramUsageMessage(usageMessage);
 
@@ -94,10 +46,4 @@ monitor::WorkerConfig parseCommandLine(int argc, char *argv[]) {
 
     return monitor::WorkerConfig{.managerAddress = managerAddress,
                                  .intervalSeconds = intervalSeconds};
-}
-
-void cleanUp() {
-    int *signalPipe = getSignalPipe();
-    close(signalPipe[0]);
-    close(signalPipe[1]);
 }

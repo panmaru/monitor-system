@@ -4,6 +4,6 @@ package monitor;
 import "google/protobuf/empty.proto";
 import "monitor_info.proto";
 
-service InfoManager {
+service MonitorInfoService {
 	rpc ReportMonitorInfo (MonitorInfo) returns (google.protobuf.Empty) {}
 }

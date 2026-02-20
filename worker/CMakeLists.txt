@@ -1,22 +1,21 @@
 find_package(absl CONFIG REQUIRED)
-message(STATUS "Found Abseil: ${absl_VERSION}")
+get_target_property(ABSL_BASE_LOCATION absl::base LOCATION)
+message(STATUS "Found Abseil: ${ABSL_BASE_LOCATION} (found version \"${absl_VERSION}\")")
 
 set(SOURCES
 	src/main.cpp
 
-	src/rpc/monitor_pusher.cpp
+	src/rpc/monitor_info_reporter.cpp
 
-	src/collector/info_collector.cpp
+	src/collector/monitor_info_collector.cpp
 	src/collector/collector_interface.cpp
 	src/collector/host_info_collector.cpp
-
-	src/utils/display_monitor_info.cpp
 )
 
 add_executable(worker ${SOURCES})
 target_link_libraries(worker PRIVATE
-	monitor-proto
+	monitor-common
 	absl::flags
     absl::flags_parse
 )
-target_include_directories(worker PRIVATE include)
+target_include_directories(worker PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

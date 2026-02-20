@@ -1,13 +1,15 @@
 find_package(protobuf CONFIG REQUIRED)
-message(STATUS "Found Protobuf: ${protobuf_VERSION}")
+get_target_property(LIBPROTOBUF_LOCATION protobuf::libprotobuf LOCATION)
+message(STATUS "Found Protobuf: ${LIBPROTOBUF_LOCATION} (found version \"${protobuf_VERSION}\")")
 
 find_package(gRPC CONFIG REQUIRED)
-message(STATUS "Found gRPC: ${gRPC_VERSION}")
+get_target_property(GRPC_LOCATION gRPC::grpc LOCATION)
+message(STATUS "Found gRPC: ${GRPC_LOCATION} (found version \"${gRPC_VERSION}\")")
 
 set(PROTO_FILES
 	host_info.proto
 	monitor_info.proto
-	info_manager.proto
+	monitor_info_service.proto
 )
 
 add_library(monitor-proto SHARED ${PROTO_FILES})

@@ -2,8 +2,10 @@ syntax = "proto3";
 package monitor;
 
 import "host_info.proto";
+import "google/protobuf/timestamp.proto";
 
 message MonitorInfo {
-	HostInfo hostInfo = 1;
+	google.protobuf.Timestamp collectTime = 1;
+	HostInfo hostInfo = 2;
 }
 
